@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Keuangan Personal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- Screen 1: Auth Screen -->
+    <div id="authScreen" class="max-w-md mx-auto mt-16 glass-card p-6 rounded-2xl shadow-2xl">
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-xl mb-3">
+                <i class="fa-solid fa-wallet text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white">Financial Hub</h2>
+            <p class="text-slate-400 text-sm mt-1">Masuk untuk mengelola keuangan & targetmu</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Username</label>
+                <input type="text" id="emailInput" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="Masukkan Username...">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Kata Sandi</label>
+                <div class="relative">
+                    <input type="password" id="passwordInput" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="••••••••">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition focus:outline-none">
+                        <i id="eyeIcon" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition">
+                Masuk Ke Dashboard
+            </button>
+        </form>
+    </div>
+
+    <!-- Screen 2: Admin Panel -->
+    <div id="adminPanel" class="max-w-4xl mx-auto hidden space-y-6">
+        <div class="glass-card p-6 rounded-2xl flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield"></i> Admin Panel (admindian)
+                </h2>
+                <p class="text-xs text-slate-400">Monitoring seluruh pengguna & kata sandi yang terdaftar</p>
+            </div>
+            <button onclick="logout()" class="px-4 py-2 bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold rounded-xl hover:bg-rose-500/30">
+                Keluar
+            </button>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-semibold text-slate-300">Daftar Pengguna Terdaftar</h3>
+                <span class="text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20" id="userCountBadge">0 Pengguna</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-400">
+                    <thead class="text-xs uppercase bg-slate-900/50 text-slate-300">
+                        <tr>
+                            <th class="p-3">Username User</th>
+                            <th class="p-3">Kata Sandi</th>
+                            <th class="p-3">Status Role</th>
+                            <th class="p-3">Tanggal Terdaftar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 3: User Dashboard -->
+    <div id="userDashboard" class="max-w-6xl mx-auto hidden space-y-6">
+        <!-- Top Navbar -->
+        <div class="glass-card p-4 rounded-2xl flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-base">My Financial Hub</h1>
+                    <p class="text-xs text-slate-400" id="userBadge"></p>
+                </div>
+            </div>
+            <button onclick="logout()" class="px-3 py-1.5 bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium rounded-xl hover:bg-slate-700">
+                Keluar
+            </button>
+        </div>
+
+        <!-- Hero Card Target -->
+        <div class="glass-card p-6 rounded-2xl border-l-4 border-rose-500 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between gap-4">
+                <div class="space-y-3">
+                    <span class="text-xs font-semibold px-3 py-1 bg-rose-500/20 text-rose-400 rounded-full border border-rose-500/30">Target Utama / Wishlist</span>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Nama Target Impian</label>
+                        <input type="text" id="targetNameInput" value="" placeholder="Ketik nama target (misal: Honda CBR250RR)..." oninput="saveUserData()" class="bg-slate-900/90 text-lg font-bold text-white border border-slate-700 rounded-xl px-3 py-1.5 w-full md:w-80 focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Target Dana (Rp)</label>
+                        <input type="number" id="targetAmountInput" value="" placeholder="Masukkan jumlah dana..." oninput="updateDashboard(); saveUserData();" class="bg-slate-900/90 font-bold text-white border border-slate-700 rounded-xl px-3 py-1.5 w-full md:w-60 focus:outline-none focus:border-rose-500">
+                    </div>
+                </div>
+
+                <div class="glass-card p-4 rounded-xl bg-slate-900/60 min-w-[240px] flex flex-col justify-between">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-400">Terkumpul (Tabungan)</span>
+                        <span id="targetPercent" class="text-emerald-400 font-bold">0%</span>
+                    </div>
+                    <div class="text-xl font-bold text-emerald-400 mb-2" id="currentSavingsDisplay">Rp 0</div>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                        <div id="targetProgressBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2 text-right" id="targetRemainingText">Kurang: Rp 0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fitur Kalkulator Pembagian Pendapatan -->
+        <div class="glass-card p-6 rounded-2xl space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-emerald-400"></i> Kalkulator Pembagian Pendapatan
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Masukkan nominal hasil pendapatan untuk membagi alokasi ke 3 pos keuangan</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-slate-400 mr-1">Preset Rasio:</span>
+                    <button type="button" onclick="setPresetRatio(41.4, 34.2, 24.4)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-xl transition">Standar (41.4 / 34.2 / 24.4)</button>
+                    <button type="button" onclick="setPresetRatio(50, 30, 20)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 rounded-xl transition">50 / 30 / 20</button>
+                    <button type="button" onclick="setPresetRatio(40, 20, 40)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl transition">Fokus Tabungan (40 / 20 / 40)</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Input Pendapatan & Slider Rasio -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1 font-medium">Input Nominal Pendapatan (Rp)</label>
+                        <input type="number" id="calcIncomeInput" oninput="calculateSplit()" placeholder="Contoh: 4104000" class="w-full bg-slate-900/90 text-xl font-bold text-emerald-400 border border-slate-700 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500">
+                    </div>
+
+                    <div class="space-y-3 pt-2">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Makan & Needs:</span>
+                                <span id="needsRatioLabel" class="font-bold text-white">41.4%</span>
+                            </div>
+                            <input type="range" id="needsSlider" min="0" max="100" step="0.1" value="41.4" oninput="updateSliders('needs')" class="w-full accent-emerald-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-amber-400 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Belanja & Jalan-jalan:</span>
+                                <span id="wantsRatioLabel" class="font-bold text-white">34.2%</span>
+                            </div>
+                            <input type="range" id="wantsSlider" min="0" max="100" step="0.1" value="34.2" oninput="updateSliders('wants')" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-blue-400 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Tabungan:</span>
+                                <span id="savingsRatioLabel" class="font-bold text-white">24.4%</span>
+                            </div>
+                            <input type="range" id="savingsSlider" min="0" max="100" step="0.1" value="24.4" oninput="updateSliders('savings')" class="w-full accent-blue-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hasil Rekomendasi & Tombol Terapkan -->
+                <div class="flex flex-col justify-between space-y-4">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 mb-3 tracking-wider uppercase">Hasil Alokasi Rekomendasi:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-slate-900/80 border border-emerald-500/30 p-3 rounded-xl">
+                                <p class="text-[10px] text-emerald-400 font-semibold">Makan & Needs</p>
+                                <p class="text-base font-bold text-white mt-1" id="calcNeedsRes">Rp 0</p>
+                            </div>
+                            <div class="bg-slate-900/80 border border-amber-500/30 p-3 rounded-xl">
+                                <p class="text-[10px] text-amber-400 font-semibold">Belanja & Jalan-jalan</p>
+                                <p class="text-base font-bold text-white mt-1" id="calcWantsRes">Rp 0</p>
+                            </div>
+                            <div class="bg-slate-900/80 border border-blue-500/30 p-3 rounded-xl">
+                                <p class="text-[10px] text-blue-400 font-semibold">Tabungan</p>
+                                <p class="text-base font-bold text-white mt-1" id="calcSavingsRes">Rp 0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="applySplitToDashboard()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10">
+                        <i class="fa-solid fa-circle-check"></i> Terapkan Pembagian Ini ke Dashboard Bulan Ini
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 Main Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass-card p-5 rounded-2xl border-l-4 border-blue-500">
+                <p class="text-xs text-slate-400 mb-1 font-medium">Pendapatan Bulan Ini</p>
+                <div class="text-2xl font-bold text-white" id="incomeDisplay">Rp 0</div>
+                <button onclick="promptSetIncome()" class="mt-3 text-xs text-blue-400 hover:underline font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-plus-circle"></i> Input / Ubah Pendapatan
+                </button>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border-l-4 border-emerald-500">
+                <p class="text-xs text-slate-400 mb-1 font-medium">Makan & Needs</p>
+                <div class="text-2xl font-bold text-white" id="needsDisplay">Rp 0</div>
+                <p class="text-xs text-slate-500 mt-2">Sisa Anggaran Makan Harian</p>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border-l-4 border-amber-500">
+                <p class="text-xs text-slate-400 mb-1 font-medium">Belanja & Jalan-jalan</p>
+                <div class="text-2xl font-bold text-white" id="wantsDisplay">Rp 0</div>
+                <p class="text-xs text-slate-500 mt-2">Sisa Kuota Jajan/Jalan</p>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Pengeluaran -->
+            <div class="glass-card p-6 rounded-2xl space-y-4">
+                <h3 class="font-semibold text-white text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i> Catat Transaksi
+                </h3>
+                <form id="transForm" onsubmit="addTransaction(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Keterangan</label>
+                        <input type="text" id="transDesc" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="Contoh: Makan siang">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Jumlah (Rp)</label>
+                        <input type="number" id="transAmount" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" placeholder="50000">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Pilih Pos Anggaran</label>
+                        <select id="transCategory" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+                            <option value="needs">Makan</option>
+                            <option value="wants">Jalan</option>
+                            <option value="savings_withdraw">Tarik Uang Tabungan (Urgent)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-xl text-sm transition">
+                        Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+
+            <!-- Chart & History -->
+            <div class="lg:col-span-2 glass-card p-6 rounded-2xl flex flex-col justify-between space-y-6">
+                <div>
+                    <h3 class="font-semibold text-white text-sm mb-4">Proporsi Keuangan Saat Ini</h3>
+                    <div class="h-48 flex justify-center">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-white text-sm mb-3">Riwayat Transaksi</h3>
+                    <div id="transHistory" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        <p class="text-xs text-slate-500 text-center py-4">Belum ada transaksi recorded.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let users = JSON.parse(localStorage.getItem('users_db') || '[]');
+        let currentUser = null;
+        let chartInstance = null;
+
+        let financeData = {
+            income: 0,
+            needs: 0,
+            wants: 0,
+            savings: 0,
+            transactions: []
+        };
+
+        let calculatedSplit = { needs: 0, wants: 0, savings: 0 };
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+
+            if (username === 'admindian' && password === 'adminganteng') {
+                currentUser = { username: 'admindian', role: 'admin' };
+                showAdminPanel();
+                return;
+            }
+
+            let user = users.find(u => u.username === username);
+            
+            if (!user) {
+                user = { 
+                    username, 
+                    password, 
+                    role: 'user', 
+                    createdAt: new Date().toLocaleDateString('id-ID'),
+                    targetName: '',
+                    targetAmount: '',
+                    financeData: { income: 0, needs: 0, wants: 0, savings: 0, transactions: [] }
+                };
+                users.push(user);
+                localStorage.setItem('users_db', JSON.stringify(users));
+            } else {
+                if (user.password !== password) {
+                    alert("Kata sandi salah! Silakan coba lagi.");
+                    return;
+                }
+            }
+
+            currentUser = user;
+            loadUserData();
+            showUserDashboard();
+        }
+
+        function saveUserData() {
+            if (!currentUser || currentUser.role === 'admin') return;
+            currentUser.targetName = document.getElementById('targetNameInput').value;
+            currentUser.targetAmount = document.getElementById('targetAmountInput').value;
+            currentUser.financeData = financeData;
+
+            const idx = users.findIndex(u => u.username === currentUser.username);
+            if (idx !== -1) {
+                users[idx] = currentUser;
+                localStorage.setItem('users_db', JSON.stringify(users));
+            }
+        }
+
+        function loadUserData() {
+            if (!currentUser || currentUser.role === 'admin') return;
+            document.getElementById('targetNameInput').value = currentUser.targetName || '';
+            document.getElementById('targetAmountInput').value = currentUser.targetAmount || '';
+            financeData = currentUser.financeData || { income: 0, needs: 0, wants: 0, savings: 0, transactions: [] };
+        }
+
+        function showAdminPanel() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+
+            const tbody = document.getElementById('userTableBody');
+            const userCountBadge = document.getElementById('userCountBadge');
+            tbody.innerHTML = '';
+            
+            userCountBadge.innerText = `${users.length} Pengguna`;
+
+            if(users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-500">Belum ada user biasa yang terdaftar.</td></tr>`;
+            } else {
+                users.forEach(u => {
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-800">
+                            <td class="p-3 text-white font-medium">${u.username}</td>
+                            <td class="p-3 text-emerald-400 font-mono text-xs font-semibold">${u.password}</td>
+                            <td class="p-3"><span class="px-2.5 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full border border-blue-500/30">User</span></td>
+                            <td class="p-3 text-xs text-slate-400">${u.createdAt || '-'}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function showUserDashboard() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+
+            document.getElementById('userBadge').innerText = currentUser.username;
+            initChart();
+            updateDashboard();
+            calculateSplit();
+        }
+
+        function logout() {
+            saveUserData();
+            currentUser = null;
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('authScreen').classList.remove('hidden');
+        }
+
+        function setPresetRatio(needs, wants, savings) {
+            document.getElementById('needsSlider').value = needs;
+            document.getElementById('wantsSlider').value = wants;
+            document.getElementById('savingsSlider').value = savings;
+            updateSliders('preset');
+        }
+
+        function updateSliders(changed) {
+            let n = parseFloat(document.getElementById('needsSlider').value) || 0;
+            let w = parseFloat(document.getElementById('wantsSlider').value) || 0;
+            let s = parseFloat(document.getElementById('savingsSlider').value) || 0;
+
+            document.getElementById('needsRatioLabel').innerText = n.toFixed(1) + '%';
+            document.getElementById('wantsRatioLabel').innerText = w.toFixed(1) + '%';
+            document.getElementById('savingsRatioLabel').innerText = s.toFixed(1) + '%';
+
+            calculateSplit();
+        }
+
+        function calculateSplit() {
+            const income = parseFloat(document.getElementById('calcIncomeInput').value) || 0;
+            const n = parseFloat(document.getElementById('needsSlider').value) || 0;
+            const w = parseFloat(document.getElementById('wantsSlider').value) || 0;
+            const s = parseFloat(document.getElementById('savingsSlider').value) || 0;
+
+            const totalRatio = n + w + s || 100;
+
+            calculatedSplit.needs = Math.round(income * (n / totalRatio));
+            calculatedSplit.wants = Math.round(income * (w / totalRatio));
+            calculatedSplit.savings = Math.round(income * (s / totalRatio));
+
+            document.getElementById('calcNeedsRes').innerText = `Rp ${calculatedSplit.needs.toLocaleString('id-ID')}`;
+            document.getElementById('calcWantsRes').innerText = `Rp ${calculatedSplit.wants.toLocaleString('id-ID')}`;
+            document.getElementById('calcSavingsRes').innerText = `Rp ${calculatedSplit.savings.toLocaleString('id-ID')}`;
+        }
+
+        function applySplitToDashboard() {
+            const income = parseFloat(document.getElementById('calcIncomeInput').value);
+            if (!income || income <= 0) {
+                alert("Masukkan nominal pendapatan terlebih dahulu di Kalkulator!");
+                return;
+            }
+
+            financeData.income = income;
+            financeData.needs = calculatedSplit.needs;
+            financeData.wants = calculatedSplit.wants;
+            financeData.savings = calculatedSplit.savings;
+
+            saveUserData();
+            updateDashboard();
+            alert("Hasil pembagian berhasil diterapkan ke Dashboard Keuangan!");
+        }
+
+        function promptSetIncome() {
+            const val = prompt("Masukkan total pendapatan bulan ini (Rp):", financeData.income || "");
+            if (val !== null && !isNaN(val) && val > 0) {
+                const income = parseFloat(val);
+                financeData.income = income;
+                financeData.needs = Math.round(income * 0.40);
+                financeData.wants = Math.round(income * 0.35);
+                financeData.savings = Math.round(income * 0.25);
+                saveUserData();
+                updateDashboard();
+            }
+        }
+
+        function addTransaction(e) {
+            e.preventDefault();
+            const desc = document.getElementById('transDesc').value;
+            const amount = parseFloat(document.getElementById('transAmount').value);
+            const cat = document.getElementById('transCategory').value;
+
+            if (cat === 'needs') {
+                financeData.needs -= amount;
+            } else if (cat === 'wants') {
+                financeData.wants -= amount;
+            } else if (cat === 'savings_withdraw') {
+                financeData.savings -= amount;
+            }
+
+            financeData.transactions.unshift({ desc, amount, cat, date: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
+            
+            document.getElementById('transDesc').value = '';
+            document.getElementById('transAmount').value = '';
+            
+            saveUserData();
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            document.getElementById('incomeDisplay').innerText = `Rp ${financeData.income.toLocaleString('id-ID')}`;
+            document.getElementById('needsDisplay').innerText = `Rp ${financeData.needs.toLocaleString('id-ID')}`;
+            document.getElementById('wantsDisplay').innerText = `Rp ${financeData.wants.toLocaleString('id-ID')}`;
+            document.getElementById('currentSavingsDisplay').innerText = `Rp ${financeData.savings.toLocaleString('id-ID')}`;
+
+            const targetVal = parseFloat(document.getElementById('targetAmountInput').value) || 0;
+            let percent = 0;
+            let remaining = 0;
+
+            if (targetVal > 0) {
+                percent = Math.min(100, Math.max(0, ((financeData.savings / targetVal) * 100))).toFixed(1);
+                remaining = Math.max(0, targetVal - financeData.savings);
+            }
+
+            document.getElementById('targetPercent').innerText = `${percent}%`;
+            document.getElementById('targetProgressBar').style.width = `${percent}%`;
+            document.getElementById('targetRemainingText').innerText = `Kurang: Rp ${remaining.toLocaleString('id-ID')}`;
+
+            const histContainer = document.getElementById('transHistory');
+            if (financeData.transactions.length === 0) {
+                histContainer.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Belum ada transaksi recorded.</p>`;
+            } else {
+                histContainer.innerHTML = financeData.transactions.map(t => `
+                    <div class="flex justify-between items-center p-2.5 bg-slate-900/60 rounded-xl text-xs">
+                        <div>
+                            <p class="font-medium text-white">${t.desc}</p>
+                            <span class="text-[10px] text-slate-400 capitalize">${t.cat === 'needs' ? 'Makan' : t.cat === 'wants' ? 'Jalan' : 'Tarik Tabungan'}</span>
+                        </div>
+                        <span class="font-bold ${t.cat === 'savings_withdraw' ? 'text-rose-400' : 'text-slate-300'}">-Rp ${t.amount.toLocaleString('id-ID')}</span>
+                    </div>
+                `).join('');
+            }
+
+            updateChart();
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Makan & Needs', 'Tabungan', 'Belanja & Jalan-jalan'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!chartInstance) return;
+            chartInstance.data.datasets[0].data = [
+                Math.max(0, financeData.needs),
+                Math.max(0, financeData.savings),
+                Math.max(0, financeData.wants)
+            ];
+            chartInstance.update();
+        }
+    </script>
+</body>
+</html>
